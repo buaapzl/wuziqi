@@ -26,19 +26,32 @@ class Renderer:
         self.screen = pygame.display.set_mode((self.WINDOW_SIZE, self.WINDOW_HEIGHT))
         pygame.display.set_caption("五子棋 v1.0")
 
-        # 使用支持中文的字体
-        try:
-            # 尝试使用系统自带的中文字体
-            self.font = pygame.font.Font("SimHei", 32)
-            self.small_font = pygame.font.Font("SimHei", 24)
-        except:
+        # 使用支持中文的字体 (macOS优先)
+        import platform
+        if platform.system() == "Darwin":
+            # macOS 系统字体
             try:
-                self.font = pygame.font.Font("Microsoft YaHei", 32)
-                self.small_font = pygame.font.Font("Microsoft YaHei", 24)
+                self.font = pygame.font.Font("/System/Library/Fonts/STHeiti Medium.ttc", 32)
+                self.small_font = pygame.font.Font("/System/Library/Fonts/STHeiti Medium.ttc", 24)
             except:
-                # 如果都没有，使用默认字体（可能显示方块）
-                self.font = pygame.font.Font(None, 32)
-                self.small_font = pygame.font.Font(None, 24)
+                try:
+                    self.font = pygame.font.Font("/System/Library/Fonts/Supplemental/Songti.ttc", 32)
+                    self.small_font = pygame.font.Font("/System/Library/Fonts/Supplemental/Songti.ttc", 24)
+                except:
+                    self.font = pygame.font.Font(None, 32)
+                    self.small_font = pygame.font.Font(None, 24)
+        else:
+            # Windows/Linux 系统字体
+            try:
+                self.font = pygame.font.Font("SimHei", 32)
+                self.small_font = pygame.font.Font("SimHei", 24)
+            except:
+                try:
+                    self.font = pygame.font.Font("Microsoft YaHei", 32)
+                    self.small_font = pygame.font.Font("Microsoft YaHei", 24)
+                except:
+                    self.font = pygame.font.Font(None, 32)
+                    self.small_font = pygame.font.Font(None, 24)
         self.buttons = [
             {'rect': pygame.Rect(20, self.BOARD_SIZE + 20, 80, 40), 'text': '新游戏'},
             {'rect': pygame.Rect(120, self.BOARD_SIZE + 20, 80, 40), 'text': '悔棋'},
