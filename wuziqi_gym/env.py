@@ -37,11 +37,16 @@ class WuziqiEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
+        self.np_random_ = np.random.default_rng(seed)
         self.board = Board()
         self._current_player = Board.BLACK
         return self._get_observation(), {}
 
     def step(self, action: int):
+        # 检查游戏是否已结束
+        if self.board.is_game_over():
+            return self._get_observation(), 0, True, False, {'error': 'Game already over'}
+
         x, y = action % 15, action // 15
 
         # 检查非法动作
@@ -52,6 +57,12 @@ class WuziqiEnv(gym.Env):
         # 执行落子
         self.board.place(x, y)
 
+        # 保存当前玩家（在切换之前）用于奖励计算
+        current_player_before_switch = self._current_player
+
+        # 更新当前玩家
+        self._current_player = self.board.current_player
+
         # 检查游戏结束
         terminated = self.board.is_game_over()
 
@@ -59,9 +70,9 @@ class WuziqiEnv(gym.Env):
         reward = 0.0
         if terminated:
             winner = self.board.get_winner()
-            if winner == Board.BLACK and self._current_player == Board.BLACK:
+            if winner == Board.BLACK and current_player_before_switch == Board.BLACK:
                 reward = 1.0
-            elif winner == Board.WHITE and self._current_player == Board.WHITE:
+            elif winner == Board.WHITE and current_player_before_switch == Board.WHITE:
                 reward = 1.0
             elif winner != 0:
                 reward = -1.0

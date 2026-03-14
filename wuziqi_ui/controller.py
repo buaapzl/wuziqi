@@ -14,6 +14,8 @@ class Controller:
         self.last_move = None
         self.difficulty = 3  # 默认中等
         self.game_over = False
+        self.move_history = []  # 记录每一步的棋盘状态用于悔棋
+        self.player_just_moved = False  # 标记玩家是否刚落子
 
     def handle_click(self, pos: tuple) -> bool:
         """处理鼠标点击，返回是否需要重绘"""
@@ -24,14 +26,21 @@ class Controller:
             if button['rect'].collidepoint(pos):
                 if button['text'] == '新游戏':
                     self.game.reset()
+                    self.move_history = []  # 清空悔棋历史
                     self.last_move = None
                     self.game_over = False
                     return True
                 elif button['text'] == '悔棋':
-                    # 简化：重新开始
-                    self.game.reset()
-                    self.last_move = None
-                    self.game_over = False
+                    # 实际悔棋：恢复到上一步状态
+                    if len(self.move_history) >= 2:
+                        # 移除最近两步（玩家和AI）
+                        self.move_history.pop()
+                        if self.move_history:
+                            last_state = self.move_history[-1]
+                            self.game.board.grid = [row[:] for row in last_state]
+                            self.game.board.current_player = Board.BLACK
+                            self.last_move = None
+                            self.game_over = False
                     return True
                 elif button['text'] == '认输':
                     self.game_over = True
@@ -46,11 +55,20 @@ class Controller:
                     self.ai = create_ai(self.difficulty)
                     return True
 
-        # 检查棋盘点击
-        if 50 <= x <= 50 + self.renderer.BOARD_SIZE and \
-           30 <= y <= 30 + self.renderer.BOARD_SIZE:
-            board_x = (x - 50) // self.renderer.CELL_SIZE
-            board_y = (y - 30) // self.renderer.CELL_SIZE
+        # 检查棋盘点击 - 使用更精确的落点检测
+        board_left = 50
+        board_top = 30
+        board_right = board_left + self.renderer.BOARD_SIZE
+        board_bottom = board_top + self.renderer.BOARD_SIZE
+
+        if board_left <= x < board_right and board_top <= y < board_bottom:
+            # 计算最近的交叉点
+            board_x = int(round((x - board_left) / self.renderer.CELL_SIZE))
+            board_y = int(round((y - board_top) / self.renderer.CELL_SIZE))
+
+            # 确保在有效范围内
+            board_x = max(0, min(14, board_x))
+            board_y = max(0, min(14, board_y))
 
             if self.game.board.is_valid_position(board_x, board_y) and \
                self.game.board.grid[board_y][board_x] == Board.EMPTY:
@@ -67,11 +85,18 @@ class Controller:
         ai = create_ai(self.difficulty)
         if ai:
             move = ai.select(self.game.board, self.game.board.current_player)
+            # 保存当前棋盘状态用于悔棋
+            self.move_history.append([row[:] for row in self.game.board.grid])
             self.game.make_move(*move)
             self.last_move = move
 
     def update(self):
         """更新游戏状态"""
+        # 如果玩家刚落子，先清除标记，让玩家看到自己的落子
+        if self.player_just_moved:
+            self.player_just_moved = False
+            return
+
         # AI移动
         if not self.game_over and not self.game.board.is_game_over():
             if self.game.board.current_player != Board.BLACK:  # AI是白方

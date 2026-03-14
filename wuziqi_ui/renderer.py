@@ -9,6 +9,7 @@ class Renderer:
     CELL_SIZE = 40
     BOARD_SIZE = 15 * CELL_SIZE
     WINDOW_SIZE = BOARD_SIZE + 200  # 额外空间给UI
+    WINDOW_HEIGHT = BOARD_SIZE + 80  # 底部空间给按钮
 
     BLACK_COLOR = (0, 0, 0)
     WHITE_COLOR = (255, 255, 255)
@@ -22,10 +23,22 @@ class Renderer:
 
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((self.WINDOW_SIZE, self.BOARD_SIZE + 80))
+        self.screen = pygame.display.set_mode((self.WINDOW_SIZE, self.WINDOW_HEIGHT))
         pygame.display.set_caption("五子棋 v1.0")
-        self.font = pygame.font.Font(None, 32)
-        self.small_font = pygame.font.Font(None, 24)
+
+        # 使用支持中文的字体
+        try:
+            # 尝试使用系统自带的中文字体
+            self.font = pygame.font.Font("SimHei", 32)
+            self.small_font = pygame.font.Font("SimHei", 24)
+        except:
+            try:
+                self.font = pygame.font.Font("Microsoft YaHei", 32)
+                self.small_font = pygame.font.Font("Microsoft YaHei", 24)
+            except:
+                # 如果都没有，使用默认字体（可能显示方块）
+                self.font = pygame.font.Font(None, 32)
+                self.small_font = pygame.font.Font(None, 24)
         self.buttons = [
             {'rect': pygame.Rect(20, self.BOARD_SIZE + 20, 80, 40), 'text': '新游戏'},
             {'rect': pygame.Rect(120, self.BOARD_SIZE + 20, 80, 40), 'text': '悔棋'},

@@ -28,7 +28,10 @@ def main():
                 if isinstance(result, tuple):
                     x, y = result
                     if game.make_move(x, y):
+                        # 保存当前棋盘状态用于悔棋
+                        controller.move_history.append([row[:] for row in game.board.grid])
                         controller.last_move = (x, y)
+                        controller.player_just_moved = True  # 标记玩家刚落子
 
         # 更新
         controller.update()
@@ -36,6 +39,7 @@ def main():
         if controller.game_over:
             pygame.time.wait(1000)
             game.reset()
+            controller.move_history = []  # 清空悔棋历史
             controller.last_move = None
             controller.game_over = False
 
