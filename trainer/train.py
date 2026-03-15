@@ -142,6 +142,5 @@ def train(config: TrainConfig, use_action_mask: bool = True):
 if __name__ == '__main__':
     config = TrainConfig(
         algorithm="PPO",
-        total_timesteps=100000,
     )
     train(config)

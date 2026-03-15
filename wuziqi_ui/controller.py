@@ -1,7 +1,15 @@
 import pygame
+import os
 from wuziqi_core.game import Game
 from wuziqi_core.board import Board
 from wuziqi_core.ai import create_ai
+
+# 尝试导入PPO模型
+try:
+    from stable_baselines3 import PPO
+    PPO_AVAILABLE = True
+except ImportError:
+    PPO_AVAILABLE = False
 
 
 class Controller:
@@ -16,6 +24,26 @@ class Controller:
         self.game_over = False
         self.move_history = []  # 记录每一步的棋盘状态用于悔棋
         self.player_just_moved = False  # 标记玩家是否刚落子
+        self.ppo_model = None  # PPO模型
+        self._load_ppo_model()
+
+    def _load_ppo_model(self):
+        """加载PPO模型"""
+        if not PPO_AVAILABLE:
+            return
+        # 查找模型文件
+        model_paths = [
+            "./models/ppo_wuziqi.zip",
+            "./models/PPO_wuziqi.zip",
+        ]
+        for path in model_paths:
+            if os.path.exists(path):
+                try:
+                    self.ppo_model = PPO.load(path)
+                    print(f"已加载PPO模型: {path}")
+                    break
+                except Exception as e:
+                    print(f"加载模型失败 {path}: {e}")
 
     def handle_click(self, pos: tuple) -> bool:
         """处理鼠标点击，返回是否需要重绘"""
@@ -47,12 +75,13 @@ class Controller:
                     return True
 
         # 检查难度按钮
-        difficulties = {'入门': 1, '简单': 2, '中等': 3, '困难': 4}
+        difficulties = {'入门': 1, '简单': 2, '中等': 3, '困难': 4, '大师': 5}
         for button in self.renderer.difficulty_buttons:
             if button['rect'].collidepoint(pos):
                 if button['text'] in difficulties:
                     self.difficulty = difficulties[button['text']]
-                    self.ai = create_ai(self.difficulty)
+                    if self.difficulty < 5:
+                        self.ai = create_ai(self.difficulty)
                     return True
 
         # 检查棋盘点击 - 使用更精确的落点检测
@@ -81,14 +110,54 @@ class Controller:
         if self.game_over or self.game.board.is_game_over():
             return
 
-        # 创建当前玩家颜色的AI
-        ai = create_ai(self.difficulty)
-        if ai:
-            move = ai.select(self.game.board, self.game.board.current_player)
+        move = None
+
+        # 如果是大师难度，尝试使用PPO模型
+        if self.difficulty == 5:
+            if self.ppo_model is not None:
+                # 使用PPO模型预测动作
+                # 需要将棋盘状态转换为模型输入格式
+                try:
+                    obs = self._get_obs()
+                    action, _ = self.ppo_model.predict(obs, deterministic=True)
+                    # 将action转换为(x, y)
+                    board_x = action % 15
+                    board_y = action // 15
+                    # 检查是否合法
+                    if self.game.board.is_valid_position(board_x, board_y) and \
+                       self.game.board.grid[board_y][board_x] == Board.EMPTY:
+                        move = (board_x, board_y)
+                except Exception as e:
+                    print(f"PPO模型预测失败: {e}")
+
+        # 如果没有使用PPO或PPO失败，使用规则AI
+        if move is None:
+            ai = create_ai(4)  # 使用MCTS作为后备
+            if ai:
+                move = ai.select(self.game.board, self.game.board.current_player)
+
+        if move:
             # 保存当前棋盘状态用于悔棋
             self.move_history.append([row[:] for row in self.game.board.grid])
             self.game.make_move(*move)
             self.last_move = move
+
+    def _get_obs(self):
+        """获取PPO模型的观察输入"""
+        import numpy as np
+        obs = np.zeros((3, 15, 15), dtype=np.float32)
+        player = self.game.board.current_player
+        opponent = Board.WHITE if player == Board.BLACK else Board.BLACK
+
+        for y in range(15):
+            for x in range(15):
+                if self.game.board.grid[y][x] == player:
+                    obs[0, y, x] = 1.0
+                elif self.game.board.grid[y][x] == opponent:
+                    obs[1, y, x] = 1.0
+                else:
+                    obs[2, y, x] = 1.0
+        return obs
 
     def update(self):
         """更新游戏状态"""

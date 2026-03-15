@@ -62,6 +62,7 @@ class Renderer:
             {'rect': pygame.Rect(390, self.BOARD_SIZE + 20, 60, 40), 'text': '简单'},
             {'rect': pygame.Rect(460, self.BOARD_SIZE + 20, 60, 40), 'text': '中等'},
             {'rect': pygame.Rect(530, self.BOARD_SIZE + 20, 60, 40), 'text': '困难'},
+            {'rect': pygame.Rect(600, self.BOARD_SIZE + 20, 60, 40), 'text': '大师'},
         ]
 
     def draw_board(self, board: Board, last_move=None):
