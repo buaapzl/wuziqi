@@ -85,6 +85,10 @@ def train(config: TrainConfig, use_action_mask: bool = True):
     model_kwargs = config.model_kwargs.copy() if config.model_kwargs else {}
     policy = model_kwargs.pop('policy', 'MlpPolicy')
 
+    # 显示模型配置信息
+    net_arch = model_kwargs.get('policy_kwargs', {}).get('net_arch', '默认')
+    print(f"\n[模型配置] 大小: {config.model_size} | 网络结构: {net_arch} | n_steps: {model_kwargs.get('n_steps', '默认')}\n")
+
     # 尝试使用MaskablePPO以支持动作掩码
     try:
         from stable_baselines3 import MaskablePPO
