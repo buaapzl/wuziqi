@@ -238,6 +238,10 @@ class MCTSAgent:
         return nearby if nearby else moves[:30]
 
     def _simulate(self, board: Board, original_color: int) -> int:
+        # 保存棋盘副本，模拟结束后恢复
+        grid_backup = [row[:] for row in board.grid]
+        move_count_backup = board.move_count
+
         current = Board.WHITE if original_color == Board.BLACK else Board.BLACK
         while not board.is_game_over():
             moves = board.get_valid_moves()
@@ -245,8 +249,16 @@ class MCTSAgent:
                 break
             x, y = random.choice(moves)
             board.grid[y][x] = current
+            board.move_count += 1
             current = Board.WHITE if current == Board.BLACK else Board.BLACK
-        return board.get_winner()
+
+        winner = board.get_winner()
+
+        # 恢复棋盘状态
+        board.grid = grid_backup
+        board.move_count = move_count_backup
+
+        return winner
 
 
 def create_ai(level: int):
@@ -258,6 +270,6 @@ def create_ai(level: int):
     elif level == 3:
         return MinimaxAI(depth=3)
     elif level == 4:
-        return MCTSAgent(simulations=1000)
+        return MCTSAgent(simulations=100)  # 减少模拟次数以加快速度
     else:
         return None  # Lv5 需要PPO模型

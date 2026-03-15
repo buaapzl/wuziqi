@@ -24,6 +24,7 @@ class Controller:
         self.game_over = False
         self.move_history = []  # 记录每一步的棋盘状态用于悔棋
         self.player_just_moved = False  # 标记玩家是否刚落子
+        self.ai_just_moved = False  # 标记AI是否刚移动（防止AI连续移动）
         self.ppo_model = None  # PPO模型
         self._load_ppo_model()
 
@@ -57,6 +58,8 @@ class Controller:
                     self.move_history = []  # 清空悔棋历史
                     self.last_move = None
                     self.game_over = False
+                    self.player_just_moved = False
+                    self.ai_just_moved = False
                     return True
                 elif button['text'] == '悔棋':
                     # 实际悔棋：恢复到上一步状态
@@ -69,9 +72,13 @@ class Controller:
                             self.game.board.current_player = Board.BLACK
                             self.last_move = None
                             self.game_over = False
+                            self.player_just_moved = False
+                            self.ai_just_moved = False
                     return True
                 elif button['text'] == '认输':
                     self.game_over = True
+                    self.player_just_moved = False
+                    self.ai_just_moved = False
                     return True
 
         # 检查难度按钮
@@ -142,6 +149,7 @@ class Controller:
             self.move_history.append([row[:] for row in self.game.board.grid])
             self.game.make_move(*move)
             self.last_move = move
+            self.ai_just_moved = True  # 标记AI刚移动
 
     def _get_obs(self):
         """获取PPO模型的观察输入"""
@@ -165,6 +173,11 @@ class Controller:
         # 如果玩家刚落子，先清除标记，让玩家看到自己的落子
         if self.player_just_moved:
             self.player_just_moved = False
+            return
+
+        # 如果AI刚移动，等待玩家下一步（防止AI连续移动）
+        if self.ai_just_moved:
+            self.ai_just_moved = False
             return
 
         # AI移动
