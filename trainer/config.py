@@ -24,7 +24,7 @@ PPO_CONFIG = {
     "clip_range": 0.2,
 }
 
-# 大模型配置 - 用于训练更强的AI
+# 大模型配置 - 用于训练更强的AI (使用CNN)
 LARGE_PPO_CONFIG = {
     "learning_rate": 3e-4,
     "n_steps": 4096,  # 更大的batch
@@ -33,11 +33,7 @@ LARGE_PPO_CONFIG = {
     "gamma": 0.99,
     "gae_lambda": 0.95,
     "clip_range": 0.2,
-    "policy_kwargs": {
-        "net_arch": [
-            {"pi": [256, 256], "vf": [256, 256]},  # 更大的网络
-        ]
-    }
+    "policy": "CnnPolicy",  # 使用CNN处理图像输入
 }
 
 
