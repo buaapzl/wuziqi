@@ -33,8 +33,20 @@ def main():
                         controller.last_move = (x, y)
                         controller.player_just_moved = True  # 标记玩家刚落子
 
-        # 更新
-        controller.update()
+                        # 检查玩家是否获胜
+                        if game.board.is_game_over():
+                            controller.game_over = True
+                            winner = game.board.get_winner()
+                            if winner == Board.BLACK:
+                                renderer.draw_message("恭喜！你赢了！")
+                            elif winner == Board.WHITE:
+                                renderer.draw_message("AI获胜！")
+                            else:
+                                renderer.draw_message("平局！")
+
+        # 更新（AI移动）
+        if not controller.game_over:
+            controller.update()
 
         if controller.game_over:
             pygame.time.wait(1000)

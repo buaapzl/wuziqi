@@ -58,12 +58,13 @@ class Renderer:
             {'rect': pygame.Rect(220, self.BOARD_SIZE + 20, 80, 40), 'text': '认输'},
         ]
         self.difficulty_buttons = [
-            {'rect': pygame.Rect(320, self.BOARD_SIZE + 20, 60, 40), 'text': '入门'},
-            {'rect': pygame.Rect(390, self.BOARD_SIZE + 20, 60, 40), 'text': '简单'},
-            {'rect': pygame.Rect(460, self.BOARD_SIZE + 20, 60, 40), 'text': '中等'},
-            {'rect': pygame.Rect(530, self.BOARD_SIZE + 20, 60, 40), 'text': '困难'},
-            {'rect': pygame.Rect(600, self.BOARD_SIZE + 20, 60, 40), 'text': '大师'},
+            {'rect': pygame.Rect(320, self.BOARD_SIZE + 20, 60, 40), 'text': '入门', 'level': 1},
+            {'rect': pygame.Rect(390, self.BOARD_SIZE + 20, 60, 40), 'text': '简单', 'level': 2},
+            {'rect': pygame.Rect(460, self.BOARD_SIZE + 20, 60, 40), 'text': '中等', 'level': 3},
+            {'rect': pygame.Rect(530, self.BOARD_SIZE + 20, 60, 40), 'text': '困难', 'level': 4},
+            {'rect': pygame.Rect(600, self.BOARD_SIZE + 20, 60, 40), 'text': '大师', 'level': 5},
         ]
+        self.selected_difficulty = 3  # 默认选中"中等"
 
     def draw_board(self, board: Board, last_move=None):
         self.screen.fill(self.BG_COLOR)
@@ -105,8 +106,25 @@ class Renderer:
 
         # 绘制按钮
         mouse_pos = pygame.mouse.get_pos()
-        for button in self.buttons + self.difficulty_buttons:
+        for button in self.buttons:
             color = self.BUTTON_HOVER if button['rect'].collidepoint(mouse_pos) else self.BUTTON_COLOR
+            pygame.draw.rect(self.screen, color, button['rect'], border_radius=5)
+            text = self.font.render(button['text'], True, self.WHITE_COLOR)
+            text_rect = text.get_rect(center=button['rect'].center)
+            self.screen.blit(text, text_rect)
+
+        # 绘制难度按钮（带选中高亮）
+        for button in self.difficulty_buttons:
+            is_hovered = button['rect'].collidepoint(mouse_pos)
+            is_selected = button.get('level') == self.selected_difficulty
+
+            if is_selected:
+                color = (50, 100, 150)  # 深蓝色表示选中
+            elif is_hovered:
+                color = self.BUTTON_HOVER
+            else:
+                color = self.BUTTON_COLOR
+
             pygame.draw.rect(self.screen, color, button['rect'], border_radius=5)
             text = self.font.render(button['text'], True, self.WHITE_COLOR)
             text_rect = text.get_rect(center=button['rect'].center)

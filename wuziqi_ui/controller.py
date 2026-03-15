@@ -80,6 +80,7 @@ class Controller:
             if button['rect'].collidepoint(pos):
                 if button['text'] in difficulties:
                     self.difficulty = difficulties[button['text']]
+                    self.renderer.selected_difficulty = self.difficulty  # 更新选中状态
                     if self.difficulty < 5:
                         self.ai = create_ai(self.difficulty)
                     return True
@@ -170,14 +171,3 @@ class Controller:
         if not self.game_over and not self.game.board.is_game_over():
             if self.game.board.current_player != Board.BLACK:  # AI是白方
                 self.ai_move()
-
-        # 检查游戏结束
-        if self.game.board.is_game_over():
-            self.game_over = True
-            winner = self.game.board.get_winner()
-            if winner == Board.BLACK:
-                self.renderer.draw_message("恭喜！你赢了！")
-            elif winner == Board.WHITE:
-                self.renderer.draw_message("AI获胜！")
-            else:
-                self.renderer.draw_message("平局！")
