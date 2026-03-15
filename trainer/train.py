@@ -79,6 +79,9 @@ def train(config: TrainConfig, use_action_mask: bool = True):
         env = base_env
 
     # 创建模型
+    from trainer.config import get_model_config
+    if config.model_kwargs is None:
+        config.model_kwargs = get_model_config(config.model_size)
     model_kwargs = config.model_kwargs.copy() if config.model_kwargs else {}
     policy = model_kwargs.pop('policy', 'MlpPolicy')
 
@@ -140,7 +143,18 @@ def train(config: TrainConfig, use_action_mask: bool = True):
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser(description='训练五子棋AI')
+    parser.add_argument('--model-size', type=str, default='medium',
+                        choices=['small', 'medium', 'large'],
+                        help='模型大小: small(快), medium, large(强)')
+    parser.add_argument('--timesteps', type=int, default=100000000,
+                        help='总训练步数')
+    args = parser.parse_args()
+
     config = TrainConfig(
         algorithm="PPO",
+        model_size=args.model_size,
+        total_timesteps=args.timesteps,
     )
     train(config)
