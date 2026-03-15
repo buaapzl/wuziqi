@@ -118,22 +118,37 @@ def train(config: TrainConfig, use_action_mask: bool = True):
     save_freq = config.save_freq
     max_steps = config.max_steps
 
+    import time
+
     # 分步训练以支持保存频率
     if save_freq > 0 and save_freq < total_timesteps:
         num_saves = total_timesteps // save_freq
         remaining = total_timesteps % save_freq
+        start_time = time.time()
 
         for i in range(num_saves):
+            step_start = time.time()
             model.learn(total_timesteps=save_freq, reset_num_timesteps=False)
+            step_time = time.time() - step_start
+            elapsed = time.time() - start_time
+            progress = (i + 1) * save_freq
+            eta = (elapsed / progress) * (total_timesteps - progress) if progress > 0 else 0
+
             # 保存检查点
             os.makedirs(config.save_path, exist_ok=True)
             model.save(os.path.join(config.save_path, f"{config.algorithm}_wuziqi_step_{i+1}"))
+
+            print(f"\n[训练] 进度: {progress}/{total_timesteps} ({100*progress/total_timesteps:.1f}%) | "
+                  f"本轮用时: {step_time:.1f}s | 已用时: {elapsed:.1f}s | 预计剩余: {eta:.1f}s")
 
         if remaining > 0:
             model.learn(total_timesteps=remaining, reset_num_timesteps=False)
     else:
         # 一次性训练
+        start_time = time.time()
         model.learn(total_timesteps=total_timesteps)
+        total_time = time.time() - start_time
+        print(f"\n[训练完成] 总用时: {total_time:.1f}秒 ({total_time/60:.1f}分钟)")
 
     # 最终保存
     os.makedirs(config.save_path, exist_ok=True)
@@ -148,8 +163,8 @@ if __name__ == '__main__':
     parser.add_argument('--model-size', type=str, default='medium',
                         choices=['small', 'medium', 'large'],
                         help='模型大小: small(快), medium, large(强)')
-    parser.add_argument('--timesteps', type=int, default=100000000,
-                        help='总训练步数')
+    parser.add_argument('--timesteps', type=int, default=10000000,
+                        help='总训练步数 (默认1000万)')
     args = parser.parse_args()
 
     config = TrainConfig(

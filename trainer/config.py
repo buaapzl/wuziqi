@@ -52,7 +52,7 @@ MODEL_CONFIGS = {
 @dataclass
 class TrainConfig:
     algorithm: str = "PPO"
-    total_timesteps: int = 1000000
+    total_timesteps: int = 10000000
     max_steps: int = 200  # Max steps per episode (used by environment wrapper)
     env_make_kwargs: Optional[dict] = None
     model_size: str = "large"  # small, medium, large
