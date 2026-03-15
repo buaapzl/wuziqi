@@ -79,10 +79,78 @@ class WuziqiEnv(gym.Env):
             else:
                 reward = 0.0  # 平局
         else:
-            # 每步轻微惩罚
-            reward = -0.001
+            # 中间奖励：根据棋型给奖励
+            reward = self._evaluate_position(current_player_before_switch)
 
         return self._get_observation(), reward, terminated, False, {}
+
+    def _evaluate_position(self, player: int) -> float:
+        """评估当前玩家位置的奖励"""
+        reward = 0.0
+
+        # 检查每个位置
+        for y in range(15):
+            for x in range(15):
+                if self.board.grid[y][x] == player:
+                    # 评估四个方向的连子
+                    for dx, dy in [(1, 0), (0, 1), (1, 1), (1, -1)]:
+                        count, open_ends = self._count_line(x, y, dx, dy, player)
+                        reward += self._get_pattern_reward(count, open_ends)
+
+        return reward * 0.01  # 缩放奖励
+
+    def _count_line(self, x: int, y: int, dx: int, dy: int, player: int) -> tuple:
+        """计算从(x,y)开始在(dx,dy)方向的连子数和开放端数"""
+        # 向正方向计算
+        count_pos = 0
+        nx, ny = x + dx, y + dy
+        while (0 <= nx < 15 and 0 <= ny < 15 and
+               self.board.grid[ny][nx] == player):
+            count_pos += 1
+            nx += dx
+            ny += dy
+
+        # 向负方向计算
+        count_neg = 0
+        nx, ny = x - dx, y - dy
+        while (0 <= nx < 15 and 0 <= ny < 15 and
+               self.board.grid[ny][nx] == player):
+            count_neg += 1
+            nx -= dx
+            ny -= dy
+
+        total_count = count_pos + count_neg + 1
+
+        # 检查两端是否开放
+        open_ends = 0
+        nx, ny = x + dx * (count_pos + 1), y + dy * (count_pos + 1)
+        if 0 <= nx < 15 and 0 <= ny < 15 and self.board.grid[ny][nx] == Board.EMPTY:
+            open_ends += 1
+
+        nx, ny = x - dx * (count_neg + 1), y - dy * (count_neg + 1)
+        if 0 <= nx < 15 and 0 <= ny < 15 and self.board.grid[ny][nx] == Board.EMPTY:
+            open_ends += 1
+
+        return total_count, open_ends
+
+    def _get_pattern_reward(self, count: int, open_ends: int) -> float:
+        """根据棋型返回奖励"""
+        if count >= 5:
+            return 100.0  # 五连
+        elif count == 4:
+            if open_ends == 2:
+                return 10.0  # 活四
+            elif open_ends == 1:
+                return 5.0   # 冲四
+        elif count == 3:
+            if open_ends == 2:
+                return 3.0   # 活三
+            elif open_ends == 1:
+                return 1.0   # 眠三
+        elif count == 2:
+            if open_ends == 2:
+                return 0.5   # 活二
+        return 0.0
 
     def _get_observation(self) -> np.ndarray:
         """生成3通道观察"""
